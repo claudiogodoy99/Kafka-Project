@@ -1,36 +1,151 @@
-﻿using Confluent.Kafka;
-using System;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Consumidor
 {
     class Program
     {
+
+        private static List<StackConsumer> stackConsumers;
+        const string bootstrapServer = "127.0.0.1:9092";
+
         static void Main(string[] args)
         {
-            const string bootstrapServer = "127.0.0.1:9092";
-            const string groupId = "Grupo-Cliente-Send-Email";
-            const string topic = "cliente";
+            stackConsumers = new List<StackConsumer>();
 
-            ConsumerConfig config = new ConsumerConfig()
+            showMenu();
+
+            var optMenu = Console.ReadLine();
+
+            try
             {
-                BootstrapServers = bootstrapServer,
-                GroupId = groupId,
-                AutoOffsetReset = AutoOffsetReset.Latest
-            };
+                while (optMenu != "0")
+                {
+                    Console.Clear();
 
-            ConsumerBuilder<string, string> consumerBuilder = new ConsumerBuilder<string, string>(config);
+                    switch (optMenu)
+                    {
+                        case "1":
+                            createNewConsumer();
+                            
+                            break;
+                        case "2":
+                            startConsumer();
+                            break;
+                        case "3":
+                            listConsumers();
+                            
+                            break;
+                        case "4":
+                            stopConsumer();
+                            break;
+                        case "5":
+                            showDataRecieved();
+                            break;
+                        default:
 
-            var consumer = consumerBuilder.Build();
-            consumer.Subscribe(topic);
-
-            while (true)
+                            break;
+                    }
+                    Console.Clear();
+                    showMenu();
+                    optMenu = Console.ReadLine();
+                }
+            }
+            catch 
             {
-                var record = consumer.Consume(12);
-                if(record != null)
-                Console.WriteLine($"key: {record.Message.Key} \n  Value: {record.Message.Value} \n  Offset: {record.Offset} \n Partition : {record.Partition}");
+                Console.Clear();
+                Console.WriteLine("Something happend!");
+            }
+            finally{
+                stackConsumers?.Clear();
+                GC.SuppressFinalize(stackConsumers);
             }
 
-
         }
+
+        private static void showMenu()
+        {
+            Console.WriteLine(@"
+             =================Consumer Pool===================
+             0 - Exit;
+             1 - create new Consumer;
+             2 - start consumer;
+             3 - List Consumers;
+             4 - stop a consumer;
+             5 - show data recieved;
+            ");
+        }
+
+
+
+        private async static void createNewConsumer()
+        {
+            Console.WriteLine("id: ");
+            var id = Console.ReadLine();
+
+            Console.WriteLine("groupId: ");
+            var groupId = Console.ReadLine();
+
+            Console.WriteLine("topic: ");
+            var topic = Console.ReadLine();
+
+            stackConsumers.Add(new StackConsumer
+            {
+                id = id,
+                consumerWorker = new ConsumidorWorker(bootstrapServer, groupId, topic)
+            });
+        }
+
+        private static async void startConsumer()
+        {
+          
+
+            Console.WriteLine("ID: ");
+            string id = Console.ReadLine();
+
+            var worker = stackConsumers.Find(st => st.id == id);
+
+            worker.consumerWorker.startConsuming();
+
+            Console.Read();
+
+          
+        }
+
+        private static void listConsumers()
+        {
+            stackConsumers.ForEach(item =>
+            {
+                Console.WriteLine($"ID: {item.id} | STATUS: {item.consumerWorker.Status}");
+            });
+
+            Console.Read(); 
+        }
+
+        private static void stopConsumer()
+        {
+            Console.WriteLine("ID: ");
+            string id = Console.ReadLine();
+
+            var worker = stackConsumers.Find(st => st.id == id);
+
+            worker.consumerWorker.stopConsuming();
+        }
+
+        private static void showDataRecieved()
+        {
+            Console.WriteLine("ID: ");
+            string id = Console.ReadLine();
+
+            var worker = stackConsumers.Find(st => st.id == id);
+
+            worker.consumerWorker.logAllDataReaded();
+
+            Console.ReadKey();
+        }
+
+
     }
+
+  
 }

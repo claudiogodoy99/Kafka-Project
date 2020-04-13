@@ -97,19 +97,8 @@ namespace Consumidor
         }
 
         private static async void startConsumer()
-        {
-          
-
-            Console.WriteLine("ID: ");
-            string id = Console.ReadLine();
-
-            var worker = stackConsumers.Find(st => st.id == id);
-
-            worker.consumerWorker.startConsuming();
-
-            Console.Read();
-
-          
+        { 
+            findConsumerById((cons) => cons.startConsuming());
         }
 
         private static void listConsumers()
@@ -124,22 +113,30 @@ namespace Consumidor
 
         private static void stopConsumer()
         {
-            Console.WriteLine("ID: ");
-            string id = Console.ReadLine();
-
-            var worker = stackConsumers.Find(st => st.id == id);
-
-            worker.consumerWorker.stopConsuming();
+            findConsumerById((cons) => cons.stopConsuming());
         }
 
         private static void showDataRecieved()
+        {
+            findConsumerById((cons) => cons.logAllDataReaded());
+        }
+
+        private static void findConsumerById(Action<ConsumidorWorker> action) 
         {
             Console.WriteLine("ID: ");
             string id = Console.ReadLine();
 
             var worker = stackConsumers.Find(st => st.id == id);
+            
 
-            worker.consumerWorker.logAllDataReaded();
+            if (worker != null)
+            {
+                action.Invoke(worker.consumerWorker);
+            }
+            else 
+            {
+                Console.WriteLine("ID NOT FOUND");
+            }
 
             Console.ReadKey();
         }
